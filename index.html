@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Museo Virtual Louvre</title>
+
+<style>
+body { margin:0; overflow:hidden; font-family: Arial; }
+
+#info {
+position: absolute;
+bottom: 20px;
+left: 20px;
+background: rgba(0,0,0,0.75);
+color: white;
+padding: 12px;
+max-width: 300px;
+border-radius: 8px;
+display:none;
+}
+</style>
+</head>
+
+<body>
+
+<div id="info"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+<script>
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xf5f5f5);
+
+// Cámara
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+camera.position.set(0,1.6,8);
+
+// Render
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+document.body.appendChild(renderer.domElement);
+
+// Luces (mejoradas)
+const ambient = new THREE.AmbientLight(0xffffff, 0.7);
+scene.add(ambient);
+
+const light = new THREE.PointLight(0xffffff,1);
+light.position.set(10,10,10);
+scene.add(light);
+
+// Piso
+const floor = new THREE.Mesh(
+new THREE.PlaneGeometry(50,50),
+new THREE.MeshStandardMaterial({color:0xdddddd})
+);
+floor.rotation.x = -Math.PI/2;
+scene.add(floor);
+
+// Pared
+const wall = new THREE.Mesh(
+new THREE.PlaneGeometry(50,10),
+new THREE.MeshStandardMaterial({color:0xffffff})
+);
+wall.position.z = -10;
+wall.position.y = 5;
+scene.add(wall);
+
+// Cargador
+const loader = new THREE.TextureLoader();
+
+// Obras reales
+const data = [
+{
+img:"https://upload.wikimedia.org/wikipedia/commons/6/6a/Mona_Lisa.jpg",
+title:"Mona Lisa",
+text:"Obra de Leonardo da Vinci famosa por su expresión enigmática."
+},
+{
+img:"https://upload.wikimedia.org/wikipedia/commons/0/02/La_Libert%C3%A9_guidant_le_peuple.jpg",
+title:"La Libertad guiando al pueblo",
+text:"Representa la lucha por la libertad en Francia."
+},
+{
+img:"https://upload.wikimedia.org/wikipedia/commons/5/5c/Le_Radeau_de_la_M%C3%A9duse.jpg",
+title:"La balsa de la Medusa",
+text:"Escena dramática de supervivencia tras un naufragio."
+},
+{
+img:"https://upload.wikimedia.org/wikipedia/commons/0/0d/Napoleon_coronation.jpg",
+title:"La coronación de Napoleón",
+text:"Representa el poder del emperador."
+},
+{
+img:"https://upload.wikimedia.org/wikipedia/commons/8/8e/Oath_of_the_Horatii.jpg",
+title:"El Juramento de los Horacios",
+text:"Simboliza deber y sacrificio."
+},
+{
+img:"https://upload.wikimedia.org/wikipedia/commons/6/66/Venus_de_Milo_Louvre.jpg",
+title:"Venus de Milo",
+text:"Escultura clásica símbolo de belleza."
+},
+{
+img:"https://upload.wikimedia.org/wikipedia/commons/a/a1/Winged_Victory_of_Samothrace.jpg",
+title:"Victoria de Samotracia",
+text:"Escultura dinámica de la diosa Nike."
+},
+{
+img:"https://upload.wikimedia.org/wikipedia/commons/9/9d/Code-de-Hammurabi-1.jpg",
+title:"Código de Hammurabi",
+text:"Uno de los primeros códigos legales."
+},
+{
+img:"https://upload.wikimedia.org/wikipedia/commons/e/e3/Seated_Scribe_Louvre.jpg",
+title:"El escriba sentado",
+text:"Escultura egipcia con gran realismo."
+},
+{
+img:"https://upload.wikimedia.org/wikipedia/commons/3/3a/Canova_Psyche.jpg",
+title:"Psique reanimada por el beso del amor",
+text:"Escultura romántica de Canova."
+}
+];
+
+const paintings = [];
+const info = document.getElementById("info");
+
+// Crear cuadros
+data.forEach((p,i)=>{
+
+const tex = loader.load(p.img, () => {
+renderer.render(scene, camera);
+});
+tex.colorSpace = THREE.SRGBColorSpace;
+
+const mesh = new THREE.Mesh(
+new THREE.PlaneGeometry(2.5,1.8),
+new THREE.MeshStandardMaterial({map:tex})
+);
+
+mesh.position.set(i*3 - 13,3,-9.9);
+scene.add(mesh);
+
+paintings.push({mesh,data:p});
+});
+
+// Movimiento teclado
+document.addEventListener("keydown",(e)=>{
+if(e.key==="w") camera.position.z -= 0.3;
+if(e.key==="s") camera.position.z += 0.3;
+if(e.key==="a") camera.position.x -= 0.3;
+if(e.key==="d") camera.position.x += 0.3;
+});
+
+// Movimiento mouse
+document.addEventListener("mousemove",(e)=>{
+camera.rotation.y = -(e.clientX/window.innerWidth - 0.5);
+camera.rotation.x = -(e.clientY/window.innerHeight - 0.5)/3;
+});
+
+// Detectar cercanía
+function check(){
+let show=false;
+
+paintings.forEach(p=>{
+if(camera.position.distanceTo(p.mesh.position)<3){
+info.style.display="block";
+info.innerHTML="<b>"+p.data.title+"</b><br>"+p.data.text;
+show=true;
+}
+});
+
+if(!show) info.style.display="none";
+}
+
+// Animación
+function animate(){
+requestAnimationFrame(animate);
+check();
+renderer.render(scene,camera);
+}
+animate();
+
+</script>
+
+</body>
+</html>
